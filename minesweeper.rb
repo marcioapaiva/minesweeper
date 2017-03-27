@@ -1,3 +1,5 @@
+require "Set"
+
 class Minesweeper
 	attr_accessor :width
 	attr_accessor :height
@@ -53,7 +55,12 @@ class Minesweeper
 
 	def flag(x, y)
 		p = Point.new(x, y)
-		cell_at(p).flag = true
+		if cell_at(p).open?
+			false
+		else
+			cell_at(p).flag = !cell_at(p).flag
+			true
+		end
 	end
 
 	def play(x, y)
@@ -66,7 +73,28 @@ class Minesweeper
 			true
 			# finished game, victory = false
 		else
+			open_bfs(point)
 			true
+		end
+	end
+
+	private
+	def open_bfs(s)
+		set_queued = Set.new
+		queue = []
+		queue << s
+		set_queued << s
+		while !queue.empty?
+			curr = queue.shift
+			cell_at(curr).open = true
+			if n_surrounding_bombs(curr) == 0
+				neighbors(curr).select { |p_neighbor|
+					!cell_at(p_neighbor).flag? and !cell_at(p_neighbor).open? and !set_queued.include?(p_neighbor)
+				}.each { |p_neighbor|
+					queue << p_neighbor
+					set_queued << p_neighbor
+				}
+			end
 		end
 	end
 end

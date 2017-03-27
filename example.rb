@@ -20,10 +20,11 @@ if $0 == __FILE__
 
 		if flag
 			engine.flag(x, y)
-		else # play
+		else
+			engine.play(x, y)
 		end
 
-		engine.print_board
+		engine.print_board(true)
 	end
 end
 
