@@ -9,7 +9,7 @@ if $0 == __FILE__
 		printer.print(engine.board_state)
 
 		flag = false
-		puts "Enter move: ([f] x y)"
+		puts "Enter move: ([f] line col)"
 
 		move_str = gets
 		tokens = move_str.split(" ")
@@ -17,8 +17,8 @@ if $0 == __FILE__
 			flag = true
 			tokens.shift
 		end
-		x = tokens[0].to_i
-		y = tokens[1].to_i
+		x = tokens[0].to_i - 1
+		y = tokens[1].to_i - 1
 
 		valid = if flag
 			engine.flag(x, y)
