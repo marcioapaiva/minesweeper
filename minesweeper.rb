@@ -55,6 +55,20 @@ class Minesweeper
 		p = Point.new(x, y)
 		cell_at(p).flag = true
 	end
+
+	def play(x, y)
+		point = Point.new(x, y)
+		cell = cell_at(point)
+		if cell.open? or cell.flag?
+			false
+		elsif cell.bomb?
+			cell.open = true
+			true
+			# finished game, victory = false
+		else
+			true
+		end
+	end
 end
 
 class Cell
