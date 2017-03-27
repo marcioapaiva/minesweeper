@@ -50,6 +50,11 @@ class Minesweeper
 	def cell_at(p)
 		@board[p.x][p.y]
 	end
+
+	def flag(x, y)
+		p = Point.new(x, y)
+		cell_at(p).flag = true
+	end
 end
 
 class Cell
