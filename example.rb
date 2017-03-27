@@ -1,11 +1,12 @@
 require "./minesweeper.rb"
 
 if $0 == __FILE__
-	width, height, num_mines = 6, 6, 10
+	width, height, num_mines = 6, 6, 8
 	engine = Minesweeper.new(width, height, num_mines)
-	engine.print_board()
 
 	while engine.still_playing?
+		engine.print_board
+
 		flag = false
 		puts "Enter move: ([f] x y)"
 
@@ -27,9 +28,9 @@ if $0 == __FILE__
 		if !valid
 			puts "Invalid move!"
 		end
-
-		engine.print_board()
 	end
+
+	engine.print_board(true)
 
 	if engine.victory?
 		puts "You won!"

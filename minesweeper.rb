@@ -29,13 +29,18 @@ class Minesweeper
 				if cell.flag?
 					print "F"
 				elsif xray and !cell.open? and cell.bomb?
-					print "B"
+					print "#"
 				elsif cell.open? and cell.bomb?
 					print "X"
 				elsif !cell.open?
-					print "C"
+					print "."
 				else
-					print n_surrounding_bombs(cell.point).to_s
+					s_bombs = n_surrounding_bombs(cell.point)
+					if s_bombs == 0
+						print " "
+					else
+						print s_bombs.to_s
+					end
 				end
 			}
 			print "\n"
@@ -130,6 +135,12 @@ class Minesweeper
 
 	def verify_victory
 		@victory = (!@defeat and cells_list.select{|c| !c.bomb?}.all?{|c| c.open?})
+	end
+end
+
+class SimplePrinter
+	def print(board_state)
+
 	end
 end
 
