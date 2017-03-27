@@ -1,9 +1,6 @@
 require "Set"
 
 class Minesweeper
-	attr_accessor :width
-	attr_accessor :height
-	attr_accessor :board
 
 	def initialize(width, height, n_mines)
 		@width = width
@@ -67,9 +64,9 @@ class Minesweeper
 					else
 						type = :unknown
 					end
-				elsif cell.bomb? #open and bomb
+				elsif cell.bomb? # open and bomb
 					type = :open_bomb
-				else #open and not bomb
+				else # open and not bomb
 					n_surr = n_surrounding_bombs(cell.point)
 					type = :clear
 				end
@@ -79,7 +76,12 @@ class Minesweeper
 		}
 	end
 
+
 	private
+
+	attr_accessor :width
+	attr_accessor :height
+	attr_accessor :board
 
 	def populate_mines
 		(0..(width*height-1)).to_a.shuffle[0..@n_mines-1].each { |i|
@@ -175,9 +177,6 @@ class PrettyPrinter
 		Kernel::print "\n\n"
 	end
 end
-
-# class PrettyPrinter
-	# def print(board_state)
 
 class Cell
 	attr_accessor :flag
