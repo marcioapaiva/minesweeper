@@ -144,30 +144,40 @@ end
 
 class SimplePrinter
 	def print(board_state)
+		PrettyPrinter.new.print(board_state, "")
+	end
+end
+
+class PrettyPrinter
+	Board_format = {
+		unknown: '.',
+		clear: ' ',
+		bomb: '#',
+		flag: 'F',
+		open_bomb: 'X'
+	}
+
+	def print(board_state, before_line = "\t\t")
+		Kernel::print "\n"
 		board_state.each { |line|
+			Kernel::print before_line
 			line.each { |cell|
-				case cell[:type]
-				when :bomb
-					Kernel::print "#"
-				when :flag
-					Kernel::print "F"
-				when :unknown
-					Kernel::print "."
-				when :open_bomb
-					Kernel::print("X")
-				when :clear
-					if cell[:n_surr] == 0
-						Kernel::print " "
-					else
-						Kernel::print cell[:n_surr].to_s
-					end
+				str = if cell[:type] == :clear and cell[:n_surr] != 0
+					cell[:n_surr].to_s
+				else
+					Board_format[cell[:type]]
 				end
+
+				Kernel::print str
 			}
 			Kernel::print "\n"
 		}
 		Kernel::print "\n\n"
 	end
 end
+
+# class PrettyPrinter
+	# def print(board_state)
 
 class Cell
 	attr_accessor :flag
