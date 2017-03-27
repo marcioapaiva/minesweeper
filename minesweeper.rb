@@ -10,6 +10,8 @@ class Minesweeper
 		@height = height
 		@n_mines = n_mines
 		@board = Array.new(height) { |line| Array.new(width) { |col| Cell.new(Point.new(line, col)) } }
+		@defeat = false
+		@victory = false
 		populate_mines
 	end
 
@@ -24,15 +26,17 @@ class Minesweeper
 	def print_board(xray = false)
 		@board.each { |line|
 			line.each { |cell|
-				 if cell.flag?
+				if cell.flag?
 					print "F"
-				 elsif xray and !cell.open? and cell.bomb?
+				elsif xray and !cell.open? and cell.bomb?
 					print "B"
-				 elsif !cell.open?
+				elsif cell.open? and cell.bomb?
+					print "X"
+				elsif !cell.open?
 					print "C"
-				 else
+				else
 					print n_surrounding_bombs(cell.point).to_s
-				 end
+				end
 			}
 			print "\n"
 		}
@@ -62,6 +66,14 @@ class Minesweeper
 		@board[p.x][p.y]
 	end
 
+	def victory?
+		@victory
+	end
+
+	def still_playing?
+		!@defeat and !@victory
+	end
+
 	def flag(x, y)
 		p = Point.new(x, y)
 		if cell_at(p).open?
@@ -79,10 +91,11 @@ class Minesweeper
 			false
 		elsif cell.bomb?
 			cell.open = true
+			@defeat = true
 			true
-			# finished game, victory = false
 		else
 			open_bfs(point)
+			verify_victory
 			true
 		end
 	end
@@ -105,6 +118,18 @@ class Minesweeper
 				}
 			end
 		end
+	end
+
+	def cells_list
+		list = []
+		@board.each{ |l| l.each {|cell|
+			list << cell
+		}}
+		list
+	end
+
+	def verify_victory
+		@victory = (!@defeat and cells_list.select{|c| !c.bomb?}.all?{|c| c.open?})
 	end
 end
 
