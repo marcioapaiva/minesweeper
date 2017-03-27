@@ -15,62 +15,6 @@ class Minesweeper
 		populate_mines
 	end
 
-	def populate_mines
-		(0..(width*height-1)).to_a.shuffle[0..@n_mines-1].each { |i|
-			line = i/width
-			col = i%width
-			cell_at(Point.new(line, col)).bomb = true
-		}
-	end
-
-	def print_board(xray = false)
-		@board.each { |line|
-			line.each { |cell|
-				if cell.flag?
-					print "F"
-				elsif xray and !cell.open? and cell.bomb?
-					print "#"
-				elsif cell.open? and cell.bomb?
-					print "X"
-				elsif !cell.open?
-					print "."
-				else
-					s_bombs = n_surrounding_bombs(cell.point)
-					if s_bombs == 0
-						print " "
-					else
-						print s_bombs.to_s
-					end
-				end
-			}
-			print "\n"
-		}
-		print "\n\n"
-	end
-
-	# private
-	def is_valid(p)
-		p.x >= 0 and p.x < @height and p.y >= 0 and p.y < @width
-	end
-
-	# private
-	def neighbors(p)
-		[
-			Point.new(p.x-1, p.y), Point.new(p.x-1, p.y+1),
-			Point.new(p.x, p.y+1), Point.new(p.x+1, p.y+1),
-			Point.new(p.x+1, p.y), Point.new(p.x+1, p.y-1),
-			Point.new(p.x, p.y-1), Point.new(p.x-1, p.y-1)
-		].select { |p| is_valid(p) }
-	end
-
-	def n_surrounding_bombs(p)
-		neighbors(p).count{|n| cell_at(n).bomb?}
-	end
-
-	def cell_at(p)
-		@board[p.x][p.y]
-	end
-
 	def victory?
 		@victory
 	end
@@ -80,6 +24,8 @@ class Minesweeper
 	end
 
 	def flag(x, y)
+		return false if !is_valid(Point.new(x,y))
+
 		p = Point.new(x, y)
 		if cell_at(p).open?
 			false
@@ -90,6 +36,8 @@ class Minesweeper
 	end
 
 	def play(x, y)
+		return false if !is_valid(Point.new(x,y))
+
 		point = Point.new(x, y)
 		cell = cell_at(point)
 		if cell.open? or cell.flag?
@@ -105,7 +53,42 @@ class Minesweeper
 		end
 	end
 
+	def board_state(xray = false)
+		board.map{|line|
+			line.map{ |cell|
+				type = nil
+				n_surr = nil
+
+				if !cell.open?
+					if xray and cell.bomb?
+						type = :bomb
+					elsif cell.flag?
+						type = :flag
+					else
+						type = :unknown
+					end
+				elsif cell.bomb? #open and bomb
+					type = :open_bomb
+				else #open and not bomb
+					n_surr = n_surrounding_bombs(cell.point)
+					type = :clear
+				end
+
+				{:type => type, :n_surr => n_surr}
+			}
+		}
+	end
+
 	private
+
+	def populate_mines
+		(0..(width*height-1)).to_a.shuffle[0..@n_mines-1].each { |i|
+			line = i/width
+			col = i%width
+			cell_at(Point.new(line, col)).bomb = true
+		}
+	end
+
 	def open_bfs(s)
 		set_queued = Set.new
 		queue = []
@@ -136,11 +119,53 @@ class Minesweeper
 	def verify_victory
 		@victory = (!@defeat and cells_list.select{|c| !c.bomb?}.all?{|c| c.open?})
 	end
+
+	def cell_at(p)
+		@board[p.x][p.y]
+	end
+
+	def is_valid(p)
+		p.x >= 0 and p.x < @height and p.y >= 0 and p.y < @width
+	end
+
+	def neighbors(p)
+		[
+			Point.new(p.x-1, p.y), Point.new(p.x-1, p.y+1),
+			Point.new(p.x, p.y+1), Point.new(p.x+1, p.y+1),
+			Point.new(p.x+1, p.y), Point.new(p.x+1, p.y-1),
+			Point.new(p.x, p.y-1), Point.new(p.x-1, p.y-1)
+		].select { |p| is_valid(p) }
+	end
+
+	def n_surrounding_bombs(p)
+		neighbors(p).count{|n| cell_at(n).bomb?}
+	end
 end
 
 class SimplePrinter
 	def print(board_state)
-
+		board_state.each { |line|
+			line.each { |cell|
+				case cell[:type]
+				when :bomb
+					Kernel::print "#"
+				when :flag
+					Kernel::print "F"
+				when :unknown
+					Kernel::print "."
+				when :open_bomb
+					Kernel::print("X")
+				when :clear
+					if cell[:n_surr] == 0
+						Kernel::print " "
+					else
+						Kernel::print cell[:n_surr].to_s
+					end
+				end
+			}
+			Kernel::print "\n"
+		}
+		Kernel::print "\n\n"
 	end
 end
 

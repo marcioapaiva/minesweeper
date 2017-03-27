@@ -3,9 +3,10 @@ require "./minesweeper.rb"
 if $0 == __FILE__
 	width, height, num_mines = 6, 6, 8
 	engine = Minesweeper.new(width, height, num_mines)
+	printer = SimplePrinter.new
 
 	while engine.still_playing?
-		engine.print_board
+		printer.print(engine.board_state)
 
 		flag = false
 		puts "Enter move: ([f] x y)"
@@ -30,7 +31,7 @@ if $0 == __FILE__
 		end
 	end
 
-	engine.print_board(true)
+	printer.print(engine.board_state(xray: true))
 
 	if engine.victory?
 		puts "You won!"
