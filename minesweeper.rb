@@ -10,6 +10,15 @@ class Minesweeper
 		@height = height
 		@n_mines = n_mines
 		@board = Array.new(height) { |line| Array.new(width) { |col| Cell.new(Point.new(line, col)) } }
+		populate_mines
+	end
+
+	def populate_mines
+		(0..(width*height-1)).to_a.shuffle[0..@n_mines-1].each { |i|
+			line = i/width
+			col = i%width
+			cell_at(Point.new(line, col)).bomb = true
+		}
 	end
 
 	def print_board(xray = false)
