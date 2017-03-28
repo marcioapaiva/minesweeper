@@ -146,7 +146,7 @@ end
 
 class SimplePrinter
 	def print(board_state)
-		PrettyPrinter.new.print(board_state, "")
+		PrettyPrinter.new.print(board_state, "", false)
 	end
 end
 
@@ -159,10 +159,12 @@ class PrettyPrinter
 		open_bomb: 'X'
 	}
 
-	def print(board_state, before_line = "\t\t")
+	def print(board_state, before_line = "\t\t", border = true)
 		Kernel::print "\n"
+		if border then Kernel::print before_line + "_"*(board_state[0].size+2) + "\n" end
 		board_state.each { |line|
 			Kernel::print before_line
+			if border then Kernel::print "|" end
 			line.each { |cell|
 				str = if cell[:type] == :clear and cell[:n_surr] != 0
 					cell[:n_surr].to_s
@@ -172,8 +174,10 @@ class PrettyPrinter
 
 				Kernel::print str
 			}
+			if border then Kernel::print "|" end
 			Kernel::print "\n"
 		}
+		if border then Kernel::print before_line + "‾"*(board_state[0].size+2) + "\n" end
 		Kernel::print "\n\n"
 	end
 end
