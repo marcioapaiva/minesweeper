@@ -21,6 +21,7 @@ class Minesweeper
 	end
 
 	def flag(x, y)
+		return false if !still_playing?
 		return false if !is_valid(Point.new(x,y))
 
 		p = Point.new(x, y)
@@ -33,6 +34,7 @@ class Minesweeper
 	end
 
 	def play(x, y)
+		return false if !still_playing?
 		return false if !is_valid(Point.new(x,y))
 
 		point = Point.new(x, y)
