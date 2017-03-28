@@ -142,6 +142,54 @@ class Minesweeper
 	def n_surrounding_bombs(p)
 		neighbors(p).count{|n| cell_at(n).bomb?}
 	end
+
+	class Cell
+		attr_accessor :flag
+		alias_method :flag?, :flag
+
+		attr_accessor :bomb
+		alias_method :bomb?, :bomb
+
+		attr_accessor :open
+		alias_method :open?, :open
+
+		attr_accessor :point
+
+		def initialize(point)
+			self.bomb = false
+			self.flag = false
+			self.open = false
+			self.point = point
+		end
+	end
+
+	class Point
+		attr_accessor :x
+		attr_accessor :y
+
+		def initialize(x, y)
+			@x = x
+			@y = y
+		end
+
+		def ==(o)
+			o.class == self.class && o.state == state
+		end
+
+		def state
+			[@x, @y]
+		end
+
+		def to_s
+			"(#{self.x}, #{self.y})"
+		end
+
+		alias_method :eql?, :==
+
+		def hash
+			state.hash
+		end
+	end
 end
 
 class SimplePrinter
@@ -179,53 +227,5 @@ class PrettyPrinter
 		}
 		if border then Kernel::print before_line + "‾"*(board_state[0].size+2) + "\n" end
 		Kernel::print "\n\n"
-	end
-end
-
-class Cell
-	attr_accessor :flag
-	alias_method :flag?, :flag
-
-	attr_accessor :bomb
-	alias_method :bomb?, :bomb
-
-	attr_accessor :open
-	alias_method :open?, :open
-
-	attr_accessor :point
-
-	def initialize(point)
-		self.bomb = false
-		self.flag = false
-		self.open = false
-		self.point = point
-	end
-end
-
-class Point
-	attr_accessor :x
-	attr_accessor :y
-
-	def initialize(x, y)
-		@x = x
-		@y = y
-	end
-
-	def ==(o)
-		o.class == self.class && o.state == state
-	end
-	
-	def state
-		[@x, @y]
-	end
-
-	def to_s
-		"(#{self.x}, #{self.y})"
-	end
-
-	alias_method :eql?, :==
-
-	def hash
-		state.hash
 	end
 end

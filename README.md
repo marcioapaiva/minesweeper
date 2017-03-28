@@ -1,6 +1,8 @@
 # Minesweeper
-Minesweeper engine.
+A simple Ruby Minesweeper engine.
 
-To run a sample console script using the engine:
+To run an usage example:
 
+```
 ruby example.rb
+```
