@@ -1,5 +1,5 @@
 # Minesweeper
-A simple Ruby Minesweeper engine.
+A simple Minesweeper engine in Ruby.
 
 To run an usage example:
 
