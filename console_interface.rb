@@ -5,6 +5,8 @@ class ConsoleInterface
 	def initialize(width, height)
 		@printer = PrettyPrinter.new
 		@pos = Minesweeper::Point.new(0, 0)
+		@width = width
+		@height = height
 	end
 
 	def print(board_state)
@@ -20,13 +22,13 @@ class ConsoleInterface
 			c = read_char
 			case c
 			when UP_ARR
-				@pos.x -= 1
+				@pos.x -= 1 if @pos.x > 0
 			when DOWN_ARR
-				@pos.x += 1
+				@pos.x += 1 if @pos.x < @width - 1
 			when LEFT_ARR
-				@pos.y -= 1
+				@pos.y -= 1 if @pos.y > 0
 			when RIGHT_ARR
-				@pos.y += 1
+				@pos.y += 1 if @pos.y < @height - 1
 			when "\u0003", "q"
 				exit 0
 			end
