@@ -54,7 +54,7 @@ class Minesweeper
 
 	def board_state(xray = false)
 		board.map{|line|
-			line.map{ |cell|
+			line.map{|cell|
 				type = nil
 				n_surr = nil
 
@@ -195,8 +195,8 @@ class Minesweeper
 end
 
 class SimplePrinter
-	def print(board_state)
-		PrettyPrinter.new.print(board_state, "", false)
+	def print(board_state, pos = nil)
+		PrettyPrinter.new.print(board_state, pos, "", false)
 	end
 end
 
@@ -209,25 +209,37 @@ class PrettyPrinter
 		open_bomb: 'X'
 	}
 
-	def print(board_state, before_line = "\t\t", border = true)
+	def print(board_state, position = nil, before_line = "\t\t", border = true)
 		Kernel::print "\n"
-		if border then Kernel::print before_line + "_"*(board_state[0].size+2) + "\n" end
-		board_state.each { |line|
+		border_width = if position
+			3*board_state[0].size + 2
+		else
+			board_state[0].size + 2
+		end
+
+		if border then Kernel::print before_line + "_"*border_width + "\n" end
+		board_state.each_with_index { |line, x|
 			Kernel::print before_line
 			if border then Kernel::print "|" end
-			line.each { |cell|
+			line.each_with_index { |cell, y|
 				str = if cell[:type] == :clear and cell[:n_surr] != 0
 					cell[:n_surr].to_s
 				else
 					Board_format[cell[:type]]
 				end
 
-				Kernel::print str
+				if position != nil and position.x == x and position.y == y
+					Kernel::print "[" + str + "]"
+				elsif position != nil
+					Kernel::print " " + str + " "
+				else
+					Kernel::print str
+				end
 			}
 			if border then Kernel::print "|" end
 			Kernel::print "\n"
 		}
-		if border then Kernel::print before_line + "‾"*(board_state[0].size+2) + "\n" end
+		if border then Kernel::print before_line + "‾"*border_width + "\n" end
 		Kernel::print "\n\n"
 	end
 end
