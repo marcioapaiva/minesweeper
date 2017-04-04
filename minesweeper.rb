@@ -1,4 +1,5 @@
 require "Set"
+require "json"
 
 class Minesweeper
 
@@ -13,7 +14,7 @@ class Minesweeper
 	end
 
 	def victory?
-		@victory
+		!@defeat and cells_list.select{|c| !c.bomb?}.all?{|c| c.open?}
 	end
 
 	def still_playing?
@@ -53,40 +54,111 @@ class Minesweeper
 	end
 
 	def board_state(xray = false)
-		board.map{|line|
-			line.map{|cell|
+		board.map do |line|
+			line.map do |cell|
 				type = nil
 				n_surr = nil
 
-				if !cell.open?
-					if xray and cell.bomb?
-						type = :bomb
-					elsif cell.flag?
-						type = :flag
-					else
-						type = :unknown
-					end
-				elsif cell.bomb? # open and bomb
-					type = :open_bomb
-				else # open and not bomb
+				type = classify_cell(cell, xray)
+				if cell.open? and !cell.bomb?
 					n_surr = n_surrounding_bombs(cell.point)
-					type = :clear
 				end
 
 				{:type => type, :n_surr => n_surr}
-			}
-		}
+			end
+		end
 	end
 
+	def classify_cell(cell, xray)
+		if xray
+			if cell.bomb? and cell.flag? and cell.open?
+				:invalid
+			elsif cell.bomb? and cell.flag? and !cell.open?
+				:bomb_flag
+			elsif cell.bomb? and !cell.flag? and cell.open?
+				:open_bomb
+			elsif cell.bomb? and !cell.flag? and !cell.open?
+				:bomb
+			elsif !cell.bomb? and cell.flag? and cell.open?
+				:invalid
+			elsif !cell.bomb? and cell.flag? and !cell.open?
+				:flag
+			elsif !cell.bomb? and !cell.flag? and cell.open?
+				:open_clear
+			elsif !cell.bomb? and !cell.flag? and !cell.open?
+				:clear
+			end
+		else
+			if cell.bomb? and cell.flag? and cell.open?
+				:invalid
+			elsif cell.bomb? and cell.flag? and !cell.open?
+				:flag
+			elsif cell.bomb? and !cell.flag? and cell.open?
+				:open_bomb
+			elsif cell.bomb? and !cell.flag? and !cell.open?
+				:unknown
+			elsif !cell.bomb? and cell.flag? and cell.open?
+				:invalid
+			elsif !cell.bomb? and cell.flag? and !cell.open?
+				:flag
+			elsif !cell.bomb? and !cell.flag? and cell.open?
+				:clear
+			elsif !cell.bomb? and !cell.flag? and !cell.open?
+				:unknown
+			end
+		end
+	end
+
+	# Returns a string containing the internal state of the game
+	def save_state
+		Marshal.dump(self)
+	end
+
+	def self.from_state(saved_state)
+		# TODO check bounds
+		
+		new_engine = Marshal.load(saved_state)
+		# height = board_state.length
+		# width = board_state[0].length
+
+		# new_engine = Minesweeper.new(width, height, 0)
+		# board_state.each_with_index do |line, l|
+		# 	line.each_with_index do |state_hash, c|
+		# 		state_symbol = state_hash[:type]
+		# 		cell = new_engine.board[l][c]
+
+		# 		case state_symbol
+		# 		when :bomb_flag
+		# 			cell.bomb, cell.flag, cell.open = true, true, false
+		# 		when :open_bomb
+		# 			cell.bomb, cell.flag, cell.open = true, false, true
+		# 		when :bomb
+		# 			cell.bomb, cell.flag, cell.open = true, false, false
+		# 		when :flag
+		# 			cell.bomb, cell.flag, cell.open = false, true, false
+		# 		when :open_clear
+		# 			cell.bomb, cell.flag, cell.open = false, false, true
+		# 		when :clear
+		# 			cell.bomb, cell.flag, cell.open = false, false, false
+		# 		end
+		# 	end
+		# end
+
+		# # Recalculate @victory, @defeat, @n_mines
+		# @n_mines = cells_list.count{|cell| cell.bomb?}
+		# new_engine
+	end
+
+	attr_accessor :board
 
 	private
 
 	attr_accessor :width
 	attr_accessor :height
-	attr_accessor :board
+	
 
 	def populate_mines
-		(0..(width*height-1)).to_a.shuffle[0..@n_mines-1].each { |i|
+		(0..(width*height-1)).to_a.shuffle[0...@n_mines].each { |i|
 			line = i/width
 			col = i%width
 			cell_at(Point.new(line, col)).bomb = true
@@ -121,7 +193,7 @@ class Minesweeper
 	end
 
 	def verify_victory
-		@victory = (!@defeat and cells_list.select{|c| !c.bomb?}.all?{|c| c.open?})
+		
 	end
 
 	def cell_at(p)
