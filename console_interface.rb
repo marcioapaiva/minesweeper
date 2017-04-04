@@ -44,14 +44,13 @@ class ConsoleInterface
 	end
 
 	private
-	# Reads keypresses including 2 and 3 char escape sequences
+	# Reads keypress - including 2-char escape sequences
 	def read_char
 	  STDIN.echo = false
 	  STDIN.raw!
 
 	  input = STDIN.getc.chr
 	  if input == "\e" then
-	    input << STDIN.read_nonblock(3) rescue nil
 	    input << STDIN.read_nonblock(2) rescue nil
 	  end
 	ensure
