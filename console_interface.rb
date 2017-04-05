@@ -1,10 +1,10 @@
-require "./minesweeper.rb"
+require "./minesweeper_engine.rb"
 
 class ConsoleInterface
 
 	def initialize(width, height)
 		@printer = PrettyPrinter.new
-		@pos = Minesweeper::Point.new(0, 0)
+		@pos = MinesweeperEngine::Point.new(0, 0)
 		@width = width
 		@height = height
 	end

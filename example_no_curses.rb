@@ -1,10 +1,10 @@
 require "io/console"
 require "./console_interface.rb"
-require "./minesweeper.rb"
+require "./minesweeper_engine.rb"
 
 if $0 == __FILE__
 	width, height, num_mines = 6, 6, 5
-	engine = Minesweeper.new(width, height, num_mines)
+	engine = MinesweeperEngine.new(width, height, num_mines)
 	console = ConsoleInterface.new(width, height)
 
 	print "\nWelcome to minesweeper. Commands:\n"

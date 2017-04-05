@@ -1,5 +1,5 @@
 require "curses"
-require "./minesweeper.rb"
+require "./minesweeper_engine.rb"
 
 class CursesInterface
 	def self.init
@@ -11,7 +11,7 @@ class CursesInterface
 	end
 
 	def initialize(width, height)
-		@pos = Minesweeper::Point.new(0, 0)
+		@pos = MinesweeperEngine::Point.new(0, 0)
 		@width = width
 		@height = height
 	end
