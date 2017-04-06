@@ -3,7 +3,7 @@ require "./curses_interface.rb"
 require "./minesweeper_engine.rb"
 
 if $0 == __FILE__
-	width, height, num_mines = 6, 6, 5
+	width, height, num_mines = 10, 10, 5
 	engine = MinesweeperEngine.new(width, height, num_mines)
 	CursesInterface.init
 	console = CursesInterface.new(width, height)
@@ -21,7 +21,6 @@ if $0 == __FILE__
 	end
 
 	console.board_state = engine.board_state(xray: true)
-	console.draw
 
 	if engine.victory?
 		console.inform_win

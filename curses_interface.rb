@@ -29,11 +29,11 @@ class MWindow
 
 	def reposition
 		cwin.resize(height, width)
-		cwin.move(calc_pos(@anchor_y_type, @anchor_y_pos.call, height),
-				  calc_pos(@anchor_x_type, @anchor_x_pos.call, width))
+		cwin.move(calculate_position(@anchor_y_type, @anchor_y_pos.call, height),
+				  calculate_position(@anchor_x_type, @anchor_x_pos.call, width))
 	end
 
-	def calc_pos(type, pos, size)
+	def calculate_position(type, pos, size)
 		case type
 		when :top, :left
 			pos
@@ -81,6 +81,20 @@ class InstructionsWindow < MWindow
 	end
 end
 
+class StatusWindow < MWindow
+	def redraw
+	end
+
+	def draw
+		status_str = @shared_state[:status_str]
+		return if !status_str
+		cwin.setpos(0, 0)
+		cwin.addstr(" "*self.width)
+		cwin.setpos(0, (self.width - status_str.length)/2)
+		cwin.addstr(status_str)
+	end
+end
+
 class CursesInterface
 	def self.init
 		Curses.init_screen
@@ -107,7 +121,15 @@ class CursesInterface
 		instructions_window.anchor_x(:left) {0}
 		instructions_window.anchor_y(:top) {0}
 
+		status_window = StatusWindow.new(1, 30, @shared_state)
+		status_window.anchor_x(:center) {Curses.cols/2}
+		status_window.anchor_y(:center) {
+			end_of_board = (Curses.lines + @height + 2)/2 + 1
+			(end_of_board + Curses.lines)/2
+		}
+
 		@mwindows << instructions_window
+		@mwindows << status_window
 		@mwindows << board_window
 
 		redraw
@@ -134,13 +156,6 @@ class CursesInterface
 			mwindow.draw
 			mwindow.cwin.refresh
 		end
-	end
-
-	def print_bottom(str)
-		end_of_board = (Curses.lines + @height + 2)/2 + 1
-		Curses.setpos((end_of_board + Curses.lines)/2,
-					  (Curses.cols - str.size)/2)
-		Curses.addstr(str)
 	end
 
 	def get_move
@@ -172,7 +187,8 @@ class CursesInterface
 				@mwindows.each{ |win| win.cwin.close }
 				exit 0
 			else
-				print_bottom("Unknown command #{Curses.keyname(c)}") if c != nil
+				@shared_state[:status_str] =
+					("Unknown command #{Curses.keyname(c)}") if c != nil
 			end
 		end
 
@@ -180,14 +196,17 @@ class CursesInterface
 	end
 
 	def inform_win
-		print_bottom "You won!"
+		@shared_state[:status_str] = "You WON!"
+		draw
 	end
 
 	def inform_defeat
-		print_bottom "You lost!"
+		@shared_state[:status_str] = "You LOST!"
+		draw
 	end
 
 	def wait_key_press
+		draw
 		Curses.getch
 	end
 
