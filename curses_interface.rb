@@ -8,10 +8,11 @@ class MWindow
 	attr_accessor :height
 	attr_accessor :cwin # courses window
 
-	def initialize(height, width)
+	def initialize(height, width, shared_state)
 		self.cwin = Curses::Window.new(width, height, 0, 0)
 		self.height = height
 		self.width = width
+		@shared_state = shared_state
 	end
 
 	# type is one of :center, :top, :bottom
@@ -45,11 +46,6 @@ class MWindow
 end
 
 class BoardWindow < MWindow
-	def initialize(height, width, shared_state)
-		super(height, width)
-		@shared_state = shared_state
-	end
-
 	def redraw
 		self.cwin.box("|", "=")
 	end
@@ -73,6 +69,18 @@ class BoardWindow < MWindow
 	end
 end
 
+class InstructionsWindow < MWindow
+	def redraw
+	end
+
+	def draw
+		cwin.setpos(0, 0)
+		cwin.addstr "\nWelcome to minesweeper. Commands:\n"
+		cwin.addstr " - Move: Arrows\n - Flag: F\n"
+		cwin.addstr " - Click: Spacebar / Enter\n - Quit: q"
+	end
+end
+
 class CursesInterface
 	def self.init
 		Curses.init_screen
@@ -90,10 +98,17 @@ class CursesInterface
 		@shared_state[:pos] = MinesweeperEngine::Point.new(0, 0)
 
 		@mwindows = []
-		@bwin = BoardWindow.new(@height + 2, 3*@width + 2, @shared_state)
-		@bwin.anchor_x(:center) {Curses.cols/2}
-		@bwin.anchor_y(:center) {Curses.lines/2}
-		@mwindows << @bwin
+
+		board_window = BoardWindow.new(@height + 2, 3*@width + 2, @shared_state)
+		board_window.anchor_x(:center) {Curses.cols/2}
+		board_window.anchor_y(:center) {Curses.lines/2}
+
+		instructions_window = InstructionsWindow.new(8, 40, @shared_state)
+		instructions_window.anchor_x(:left) {0}
+		instructions_window.anchor_y(:top) {0}
+
+		@mwindows << instructions_window
+		@mwindows << board_window
 
 		redraw
 	end
@@ -104,7 +119,6 @@ class CursesInterface
 
 	def redraw
 		Curses.clear
-		print_welcome
 		Curses.refresh
 
 		for mwindow in @mwindows
@@ -120,13 +134,6 @@ class CursesInterface
 			mwindow.draw
 			mwindow.cwin.refresh
 		end
-	end
-
-	def print_welcome
-		Curses.setpos(0, 0)
-		Curses.addstr "\nWelcome to minesweeper. Commands:\n"
-		Curses.addstr " - Move: Arrows\n - Flag: F\n"
-		Curses.addstr " - Click: Spacebar / Enter\n - Quit: q"
 	end
 
 	def print_bottom(str)
@@ -162,7 +169,7 @@ class CursesInterface
 				redraw
 				draw
 			when "q",  "Q"
-				@bwin.cwin.close
+				# close windows
 				exit 0
 			else
 				print_bottom("Unknown command #{Curses.keyname(c)}") if c != nil
