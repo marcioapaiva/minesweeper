@@ -71,13 +71,13 @@ end
 
 class InstructionsWindow < MWindow
 	def redraw
-	end
-
-	def draw
 		cwin.setpos(0, 0)
 		cwin.addstr "\nWelcome to minesweeper. Commands:\n"
 		cwin.addstr " - Move: Arrows\n - Flag: F\n"
 		cwin.addstr " - Click: Spacebar / Enter\n - Quit: q"
+	end
+
+	def draw
 	end
 end
 
@@ -169,7 +169,7 @@ class CursesInterface
 				redraw
 				draw
 			when "q",  "Q"
-				# close windows
+				@mwindows.each{ |win| win.cwin.close }
 				exit 0
 			else
 				print_bottom("Unknown command #{Curses.keyname(c)}") if c != nil
