@@ -14,11 +14,34 @@ class CursesInterface
 		@pos = MinesweeperEngine::Point.new(0, 0)
 		@width = width
 		@height = height
+		win_height = @height + 2
+		win_width = 3*@width + 2
+		@bwin = Curses::Window.new(0, 0, 0, 0)
+		redraw
 	end
 
-	def redraw(board_state)
+	def update_bwin_location
+		win_height = @height + 2
+		win_width = 3*@width + 2
+		y_pos = (Curses.lines - win_height)/2
+		x_pos = (Curses.cols - win_width)/2
+		if y_pos > 0 and x_pos > 0
+			@bwin.resize(win_height, win_width)
+			@bwin.move(y_pos, x_pos)
+		end
+	end
+
+	def redraw(board_state = nil)
 		Curses.clear
-		print(board_state)
+		print_welcome
+		Curses.refresh
+
+		update_bwin_location
+
+		@bwin.clear
+		@bwin.box("|", "=")
+		print(board_state) if board_state
+		@bwin.refresh
 	end
 
 	def print_welcome
@@ -36,45 +59,20 @@ class CursesInterface
 	end
 
 	def print(board_state)
-		print_welcome
-
-		height = board_state.length
-		width = board_state[0].length * 3
-		pad_y = (Curses.lines - height - 2)/2 #padding for whole board
-		pad_x = (Curses.cols - width - 2)/2 #padding for whole board
-
 		board_state.each_with_index do |array_symbols, y|
 			array_symbols.each_with_index do |cell_hash, x|
-				Curses.setpos(pad_y + y + 1, pad_x + x*3 + 1)
+				@bwin.setpos(y + 1, x*3 + 1)
 				chr = get_cell_char(cell_hash)
 				if x == @pos.x and y == @pos.y
-					Curses.addstr "[#{chr}]"
+					@bwin.addstr "[#{chr}]"
 				else
-					Curses.addstr " #{chr} "
+					@bwin.addstr " #{chr} "
 				end
 			end
 		end
 
-		# Draw borders
-		vertical_border_chr, upper_border_chr, lower_border_chr = "|", "_", "‾"
-
-		#Upper
-		Curses.setpos(pad_y, pad_x)
-		Curses.addstr(upper_border_chr*(width+2))
-
-		#Lower
-		Curses.setpos(pad_y + height + 1, pad_x)
-		Curses.addstr(lower_border_chr*(width+2))
-
-		#Left and Right
-		[pad_x, pad_x + width + 1].each do |x|
-			(1..height).each do |dy|
-				Curses.setpos(dy + pad_y, x)
-				Curses.addstr(vertical_border_chr)
-			end
-		end
-
-		Curses.refresh
+		# Curses.refresh
+		@bwin.refresh
 	end
 
 	def get_move(board_state)
@@ -101,6 +99,7 @@ class CursesInterface
 			when Curses::KEY_RESIZE
 				redraw(board_state)
 			when "q",  "Q"
+				@bwin.close
 				exit 0
 			else
 				print_bottom("Unknown command #{Curses.keyname(c)}") if c != nil

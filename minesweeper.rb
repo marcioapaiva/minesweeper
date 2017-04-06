@@ -5,8 +5,8 @@ require "./minesweeper_engine.rb"
 if $0 == __FILE__
 	width, height, num_mines = 6, 6, 5
 	engine = MinesweeperEngine.new(width, height, num_mines)
-	console = CursesInterface.new(width, height)
 	CursesInterface.init
+	console = CursesInterface.new(width, height)
 
 	while engine.still_playing?
 		move = console.get_move(engine.board_state)
