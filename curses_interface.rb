@@ -32,12 +32,6 @@ class MWindow
 				  calc_pos(@anchor_x_type, @anchor_x_pos.call, width))
 	end
 
-	def redraw(bs)
-	end
-
-	def draw(bs)
-	end
-
 	def calc_pos(type, pos, size)
 		case type
 		when :top, :left
@@ -51,25 +45,25 @@ class MWindow
 end
 
 class BoardWindow < MWindow
-	def initialize(height, width, interface)
-		@interface = interface
+	def initialize(height, width, shared_state)
 		super(height, width)
+		@shared_state = shared_state
 	end
 
-	def redraw(bs)
+	def redraw
 		self.cwin.box("|", "=")
-		self.draw(bs)
 	end
 
-	def draw(bs)
-		if bs == nil
-			return
-		end
-		bs.each_with_index do |array_symbols, y|
+	def draw
+		board_state = @shared_state[:board_state]
+		pos = @shared_state[:pos]
+		return if !board_state
+		return if !pos
+		board_state.each_with_index do |array_symbols, y|
 			array_symbols.each_with_index do |cell_hash, x|
 				cwin.setpos(y + 1, x*3 + 1)
 				chr = CursesInterface.get_cell_char(cell_hash)
-				if x == @interface.pos.x and y == @interface.pos.y
+				if x == pos.x and y == pos.y
 					cwin.addstr "[#{chr}]"
 				else
 					cwin.addstr " #{chr} "
@@ -80,8 +74,6 @@ class BoardWindow < MWindow
 end
 
 class CursesInterface
-	attr_accessor :pos
-
 	def self.init
 		Curses.init_screen
 		Curses.nl
@@ -91,37 +83,41 @@ class CursesInterface
 	end
 
 	def initialize(width, height)
-		self.pos = MinesweeperEngine::Point.new(0, 0)
 		@width = width
 		@height = height
 
+		@shared_state = {}
+		@shared_state[:pos] = MinesweeperEngine::Point.new(0, 0)
+
 		@mwindows = []
-		@bwin = BoardWindow.new(@height + 2, 3*@width + 2, self)
+		@bwin = BoardWindow.new(@height + 2, 3*@width + 2, @shared_state)
 		@bwin.anchor_x(:center) {Curses.cols/2}
 		@bwin.anchor_y(:center) {Curses.lines/2}
 		@mwindows << @bwin
 
-		redraw(nil)
+		redraw
 	end
 
-	def redraw(bs)
+	def board_state=(board_state)
+		@shared_state[:board_state] = board_state
+	end
+
+	def redraw
 		Curses.clear
 		print_welcome
 		Curses.refresh
 
-		@bwin.reposition
-
 		for mwindow in @mwindows
+			mwindow.reposition
 			mwindow.cwin.clear
-			mwindow.redraw(bs)
-			mwindow.draw(bs)
+			mwindow.redraw
 			mwindow.cwin.refresh
 		end
 	end
 
-	def draw(bs)
+	def draw
 		for mwindow in @mwindows
-			mwindow.draw(bs)
+			mwindow.draw
 			mwindow.cwin.refresh
 		end
 	end
@@ -140,19 +136,12 @@ class CursesInterface
 		Curses.addstr(str)
 	end
 
-	def print(board_state)
-		
-
-		# Curses.refresh
-		@bwin.cwin.refresh
-	end
-
-	def get_move(board_state)
+	def get_move
 		move_type = nil
 
 		while true
-			# self.print(board_state)
-			self.draw(board_state)
+			draw
+			pos = @shared_state[:pos]
 			c = Curses.getch
 			case c
 			when Curses::KEY_UP
@@ -170,7 +159,8 @@ class CursesInterface
 				move_type = :play
 				break
 			when Curses::KEY_RESIZE
-				redraw(board_state)
+				redraw
+				draw
 			when "q",  "Q"
 				@bwin.cwin.close
 				exit 0

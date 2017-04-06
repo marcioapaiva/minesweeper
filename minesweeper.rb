@@ -9,7 +9,8 @@ if $0 == __FILE__
 	console = CursesInterface.new(width, height)
 
 	while engine.still_playing?
-		move = console.get_move(engine.board_state)
+		console.board_state = engine.board_state
+		move = console.get_move
 
 		case move[:type]
 		when :flag
@@ -19,7 +20,8 @@ if $0 == __FILE__
 		end
 	end
 
-	console.print(engine.board_state(xray: true))
+	console.board_state = engine.board_state(xray: true)
+	console.draw
 
 	if engine.victory?
 		console.inform_win
