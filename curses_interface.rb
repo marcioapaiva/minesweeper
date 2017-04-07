@@ -9,7 +9,8 @@ class MWindow
 	attr_accessor :cwin # courses window
 
 	def initialize(height, width, shared_state)
-		self.cwin = Curses::Window.new(width, height, 0, 0)
+		self.cwin = Curses::Window.new(height, width, 0, 0)
+		cwin.keypad(true)
 		self.height = height
 		self.width = width
 		@shared_state = shared_state
@@ -46,26 +47,70 @@ class MWindow
 end
 
 class BoardWindow < MWindow
+	def initialize(height, width, board_height, board_width, num_mines, shared_state)
+		super(height, width, shared_state)
+		@board_height = board_height
+		@board_width = board_width
+		@pos = MinesweeperEngine::Point.new(0, 0)
+		@engine = MinesweeperEngine.new(board_width, board_height, num_mines)
+		@board_state = @engine.board_state
+	end
+
 	def redraw
 		self.cwin.box("|", "=")
 	end
 
 	def draw
-		board_state = @shared_state[:board_state]
-		pos = @shared_state[:pos]
-		return if !board_state
-		return if !pos
-		board_state.each_with_index do |array_symbols, y|
+		return if !@board_state
+		return if !@pos
+		@board_state.each_with_index do |array_symbols, y|
 			array_symbols.each_with_index do |cell_hash, x|
 				cwin.setpos(y + 1, x*3 + 1)
 				chr = CursesInterface.get_cell_char(cell_hash)
-				if x == pos.x and y == pos.y
+				if x == @pos.x and y == @pos.y
 					cwin.addstr "[#{chr}]"
 				else
 					cwin.addstr " #{chr} "
 				end
 			end
 		end
+	end
+
+	# Returns possible unhandled key
+	def input
+		c = cwin.getch
+		case c
+		when Curses::KEY_UP
+			@pos.y -= 1 if @pos.y > 0
+		when Curses::KEY_DOWN
+			@pos.y += 1 if @pos.y < @board_height - 1
+		when Curses::KEY_LEFT
+			@pos.x -= 1 if @pos.x > 0
+		when Curses::KEY_RIGHT
+			@pos.x += 1 if @pos.x < @board_width - 1
+		when "f", "F"
+			@engine.flag(@pos.y, @pos.x)
+			xray = !@engine.still_playing?
+			@board_state = @engine.board_state(xray)
+		when " ", Curses::KEY_ENTER, "\r", "\n", 10, 13
+			@engine.play(@pos.y, @pos.x)
+			xray = !@engine.still_playing?
+			@board_state = @engine.board_state(xray)
+		else
+			return c
+		end
+
+		if !@engine.still_playing?
+			@shared_state[:status_str] = if @engine.victory?
+				"You WON!"
+			else
+				"You LOST!"
+			end
+		end
+
+		draw
+		cwin.refresh
+		return nil
 	end
 end
 
@@ -104,20 +149,19 @@ class CursesInterface
 		Curses.stdscr.keypad(true)
 	end
 
-	def initialize(width, height)
+	def initialize(width, height, num_mines)
 		@width = width
 		@height = height
 
 		@shared_state = {}
-		@shared_state[:pos] = MinesweeperEngine::Point.new(0, 0)
 
 		@mwindows = []
 
-		board_window = BoardWindow.new(@height + 2, 3*@width + 2, @shared_state)
+		board_window = BoardWindow.new(@height + 2, 3*@width + 2, height, width, num_mines, @shared_state)
 		board_window.anchor_x(:center) {Curses.cols/2}
 		board_window.anchor_y(:center) {Curses.lines/2}
 
-		instructions_window = InstructionsWindow.new(8, 40, @shared_state)
+		instructions_window = InstructionsWindow.new(8, 33, @shared_state)
 		instructions_window.anchor_x(:left) {0}
 		instructions_window.anchor_y(:top) {0}
 
@@ -128,20 +172,18 @@ class CursesInterface
 			(end_of_board + Curses.lines)/2
 		}
 
+		@mwindows << board_window
 		@mwindows << instructions_window
 		@mwindows << status_window
-		@mwindows << board_window
+
+		@input_windows = @mwindows.select {|win| win.respond_to?(:input)}
 
 		redraw
 	end
 
-	def board_state=(board_state)
-		@shared_state[:board_state] = board_state
-	end
-
 	def redraw
-		Curses.clear
-		Curses.refresh
+		Curses::clear
+		Curses::refresh
 
 		for mwindow in @mwindows
 			mwindow.reposition
@@ -158,41 +200,29 @@ class CursesInterface
 		end
 	end
 
-	def get_move
-		move_type = nil
-
+	def loop
+		redraw
+		draw
+		@shared_state[:selected] = 0
 		while true
 			draw
-			pos = @shared_state[:pos]
-			c = Curses.getch
-			case c
-			when Curses::KEY_UP
-				pos.y -= 1 if pos.y > 0
-			when Curses::KEY_DOWN
-				pos.y += 1 if pos.y < @height - 1
-			when Curses::KEY_LEFT
-				pos.x -= 1 if pos.x > 0
-			when Curses::KEY_RIGHT
-				pos.x += 1 if pos.x < @width - 1
-			when "f", "F"
-				move_type = :flag
-				break
-			when " ", Curses::KEY_ENTER, "\r", "\n", 10, 13
-				move_type = :play
-				break
+			unhandled = @input_windows[@shared_state[:selected]].input
+			case unhandled
 			when Curses::KEY_RESIZE
 				redraw
 				draw
+			when 9, "\t"
+				@shared_state[:selected] =
+					(@shared_state[:selected] + 1) % @input_windows.length
 			when "q",  "Q"
-				@mwindows.each{ |win| win.cwin.close }
+				@mwindows.each {|mwin| mwin.cwin.close}
 				exit 0
+			when nil
 			else
 				@shared_state[:status_str] =
-					("Unknown command #{Curses.keyname(c)}") if c != nil
+					("Unknown command #{Curses.keyname(unhandled)}") if unhandled != nil
 			end
 		end
-
-		return {:type => move_type, :pos => pos}
 	end
 
 	def inform_win
@@ -203,11 +233,6 @@ class CursesInterface
 	def inform_defeat
 		@shared_state[:status_str] = "You LOST!"
 		draw
-	end
-
-	def wait_key_press
-		draw
-		Curses.getch
 	end
 
 	private
@@ -227,4 +252,13 @@ class CursesInterface
 			Board_format[cell_hash[:type]]
 		end
 	end
+end
+
+
+if $0 == __FILE__
+	width, height, num_mines = 10, 15, 5
+
+	CursesInterface.init
+	console = CursesInterface.new(width, height, num_mines)
+	console.loop()
 end
