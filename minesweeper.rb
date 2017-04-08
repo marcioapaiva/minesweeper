@@ -66,17 +66,21 @@ class BoardWindow < MWindow
 		@board_state.each_with_index do |array_symbols, y|
 			array_symbols.each_with_index do |cell_hash, x|
 				cwin.setpos(y + 1, x*3 + 1)
+
 				chr = CursesInterface.get_cell_char(cell_hash)
-				if x == @pos.x and y == @pos.y
-					cwin.addstr "[#{chr}]"
-				else
-					cwin.addstr " #{chr} "
-				end
+				color_pair_id = CursesInterface.get_cell_color(cell_hash)
+
+				cwin.addstr (if x == @pos.x and y == @pos.y then "[" else " " end)
+
+				cwin.attrset (Curses.color_pair(color_pair_id) | Curses::A_BOLD)
+				cwin.addstr "#{chr}"
+				cwin.attrset Curses.color_pair(CursesInterface::Default)
+
+				cwin.addstr (if x == @pos.x and y == @pos.y then "]" else " " end)
 			end
 		end
 	end
 
-	# Returns possible unhandled key
 	def input
 		c = cwin.getch
 		case c
@@ -104,7 +108,7 @@ class BoardWindow < MWindow
 			@shared_state[:status_str] = if @engine.victory?
 				"You WON!"
 			else
-				"You LOST!"
+				"You lost :( Try again!"
 			end
 		end
 
@@ -143,10 +147,12 @@ end
 class CursesInterface
 	def self.init
 		Curses.init_screen
+		Curses.start_color
 		Curses.nl
 		Curses.noecho
 		Curses.curs_set 0
 		Curses.stdscr.keypad(true)
+		init_colors
 	end
 
 	def initialize(width, height, num_mines)
@@ -225,16 +231,6 @@ class CursesInterface
 		end
 	end
 
-	def inform_win
-		@shared_state[:status_str] = "You WON!"
-		draw
-	end
-
-	def inform_defeat
-		@shared_state[:status_str] = "You LOST!"
-		draw
-	end
-
 	private
 
 	Board_format = {
@@ -245,12 +241,49 @@ class CursesInterface
 		open_bomb: 'X'
 	}
 
+	Default = 1
+	Blue = 2
+	Cyan = 3
+	Green = 4
+	Magenta = 5
+	Red = 6
+	White = 7
+	Yellow = 8
+
+	def self.init_colors
+		Curses.use_default_colors
+		Curses.init_pair(Default, -1, -1)
+		Curses.init_pair(Blue, Curses::COLOR_BLUE, -1)
+		Curses.init_pair(Cyan, Curses::COLOR_CYAN, -1)
+		Curses.init_pair(Green, Curses::COLOR_GREEN, -1)
+		Curses.init_pair(Magenta, Curses::COLOR_MAGENTA, -1)
+		Curses.init_pair(Red, Curses::COLOR_RED, -1)
+		Curses.init_pair(White, Curses::COLOR_WHITE, -1)
+		Curses.init_pair(Yellow, Curses::COLOR_YELLOW, -1)
+	end
+
 	def self.get_cell_char(cell_hash)
 		if cell_hash[:type] == :clear and cell_hash[:n_surr] != 0
 			cell_hash[:n_surr].to_s
 		else
 			Board_format[cell_hash[:type]]
 		end
+	end
+
+	def self.get_cell_color(cell_hash)
+		if cell_hash[:type] == :clear and cell_hash[:n_surr] != 0
+			case cell_hash[:n_surr]
+			when 1, 5
+				return Green
+			when 2, 6
+				return Red
+			when 3, 7
+				return Blue
+			when 4, 8
+				return Magenta
+			end
+		end
+		return Default
 	end
 end
 
