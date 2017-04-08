@@ -126,6 +126,45 @@ class InstructionsWindow < MWindow
 	end
 end
 
+class MenuWindow < MWindow
+	def initialize(height, width, shared_state)
+		super(height, width, shared_state)
+		@options = ["Test1", "Test2"]
+		@selected = 0
+	end
+
+	def redraw
+		self.cwin.box("|", "-")
+	end
+
+	def draw
+		@options.each_with_index do |option_str, idx|
+			cwin.setpos(1 + idx, 1)
+			if idx == @selected
+				cwin.attrset(Curses::A_STANDOUT)
+				cwin.addstr(option_str)
+				cwin.attrset(Curses::A_NORMAL)
+			else
+				cwin.addstr(option_str)
+			end
+		end
+	end
+
+	def input
+		c = cwin.getch
+		case c
+		when Curses::KEY_UP
+			@selected -= 1 if @selected > 0
+		when Curses::KEY_DOWN
+			@selected += 1 if @selected < @options.length - 1
+		else
+			return c
+		end
+
+		return nil
+	end
+end
+
 class StatusWindow < MWindow
 	def redraw
 	end
@@ -172,7 +211,14 @@ class CursesInterface
 			(end_of_board + Curses.lines)/2
 		}
 
+		menu_window = MenuWindow.new(4, 20, @shared_state)
+		menu_window.anchor_x(:right) {Curses.cols}
+		menu_window.anchor_y(:center) {
+			Curses.lines/2
+		}
+
 		@mwindows << board_window
+		@mwindows << menu_window
 		@mwindows << instructions_window
 		@mwindows << status_window
 
@@ -220,7 +266,7 @@ class CursesInterface
 			when nil
 			else
 				@shared_state[:status_str] =
-					("Unknown command #{Curses.keyname(unhandled)}") if unhandled != nil
+					("Invalid command #{Curses.keyname(unhandled)}") if unhandled != nil
 			end
 		end
 	end
@@ -253,7 +299,6 @@ class CursesInterface
 		end
 	end
 end
-
 
 if $0 == __FILE__
 	width, height, num_mines = 10, 15, 5
